@@ -3,6 +3,7 @@
 import { z } from 'zod';
 
 import { createUser, getUser } from '@/lib/db/queries';
+import { isEmailAllowed } from '@/lib/allowedEmails';
 
 import { signIn } from './auth';
 
@@ -12,7 +13,7 @@ const authFormSchema = z.object({
 });
 
 export interface LoginActionState {
-  status: 'idle' | 'in_progress' | 'success' | 'failed' | 'invalid_data';
+  status: 'idle' | 'in_progress' | 'success' | 'failed' | 'invalid_data' | 'unauthorized';
 }
 
 export const login = async (
@@ -24,6 +25,11 @@ export const login = async (
       email: formData.get('email'),
       password: formData.get('password'),
     });
+
+    // 检查是否是项目成员
+    if (!isEmailAllowed(validatedData.email)) {
+      return { status: 'unauthorized' };
+    }
 
     await signIn('credentials', {
       email: validatedData.email,
@@ -48,7 +54,8 @@ export interface RegisterActionState {
     | 'success'
     | 'failed'
     | 'user_exists'
-    | 'invalid_data';
+    | 'invalid_data'
+    | 'unauthorized';
 }
 
 export const register = async (
@@ -60,6 +67,11 @@ export const register = async (
       email: formData.get('email'),
       password: formData.get('password'),
     });
+
+    // 检查是否是项目成员
+    if (!isEmailAllowed(validatedData.email)) {
+      return { status: 'unauthorized' };
+    }
 
     const [user] = await getUser(validatedData.email);
 

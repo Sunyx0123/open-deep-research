@@ -25,19 +25,26 @@ export default function Page() {
   );
 
   useEffect(() => {
-    if (state.status === 'failed') {
-      toast.error('Invalid credentials!');
-    } else if (state.status === 'invalid_data') {
-      toast.error('Failed validating your submission!');
-    } else if (state.status === 'success') {
-      setIsSuccessful(true);
-      router.refresh();
-    }
+  if (state.status === 'failed') {
+    toast.error('Invalid credentials!');
+  } else if (state.status === 'invalid_data') {
+    toast.error('Failed validating your submission!');
+  } else if (state.status === 'unauthorized') {
+    toast.error('You are not authorized to access this application.');
+  } else if (state.status === 'success') {
+    setIsSuccessful(true);
+    toast.success('Login successful!');
+    // 添加明确的重定向
+
+    router.push('/');
+  }
   }, [state.status, router]);
+  
 
   const handleSubmit = (formData: FormData) => {
     setEmail(formData.get('email') as string);
     formAction(formData);
+    
   };
 
   // const handleAnonymousLogin = async () => {
@@ -59,6 +66,12 @@ export default function Page() {
           <p className="text-sm text-gray-500 dark:text-zinc-400">
             Use your email and password to sign in
           </p>
+          {state.status === 'unauthorized' && (
+            <div className="mt-2 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-md text-sm">
+              <p className="font-medium">Access Denied</p>
+              <p>Only project members can access this application.</p>
+            </div>
+          )}
         </div>
         <AuthForm action={handleSubmit} defaultEmail={email}>
           <SubmitButton isSuccessful={isSuccessful}>Sign in</SubmitButton>

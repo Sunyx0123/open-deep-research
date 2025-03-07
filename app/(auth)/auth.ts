@@ -4,6 +4,7 @@ import Credentials from 'next-auth/providers/credentials';
 
 import { getUser, createUser } from '@/lib/db/queries';
 import { authConfig } from './auth.config';
+import { isEmailAllowed } from '@/lib/allowedEmails';
 
 interface ExtendedSession extends Session {
   user: User;
@@ -39,16 +40,24 @@ export const {
     Credentials({
       credentials: {},
       async authorize({ email, password }: any) {
+        console.log('NODE_ENV:', process.env.NODE_ENV);
         try {
-          // Handle anonymous access
+          // 如果提供了邮箱和密码，检查是否是项目成员
+          if (email && !isEmailAllowed(email)) {
+            console.log(`Unauthorized access attempt: ${email}`);
+            return null;
+          }
+
           if (!email && !password) {
-            return await createAnonymousUser();
+            // 禁用匿名访问
+            throw new Error('Anonymous access is disabled');
+            // return await createAnonymousUser(); // 注释掉这行
           }
 
           // Handle regular authentication
           const users = await getUser(email);
           if (users.length === 0) return null;
-          
+          // console.log('User found:', users[0]);
           // biome-ignore lint: Forbidden non-null assertion.
           const passwordsMatch = await compare(password, users[0].password!);
           if (!passwordsMatch) return null;
@@ -64,7 +73,7 @@ export const {
   // Add proxy configuration for Docker environment
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
+      name: "next-auth.session-token",
       options: {
         httpOnly: true,
         sameSite: 'lax',
@@ -76,15 +85,19 @@ export const {
   trustHost: true,
   callbacks: {
     async jwt({ token, user }) {
+      console.log('JWT callback running');
+      console.log('User:', user);
+      console.log('Token:', token);
       if (user) {
         token.id = user.id;
-      } else if (!token.id) {
+        token.email = user.email;
+      // } else if (!token.id) {
         // Create anonymous user if no user exists
-        const anonymousUser = await createAnonymousUser();
-        if (anonymousUser) {
-          token.id = anonymousUser.id;
-          token.email = anonymousUser.email;
-        }
+        // const anonymousUser = await createAnonymousUser();
+        // if (anonymousUser) {
+        //   token.id = anonymousUser.id;
+        //   token.email = anonymousUser.email;
+        // }
       }
 
       return token;

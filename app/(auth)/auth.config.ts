@@ -9,18 +9,26 @@ export const authConfig = {
     // while this file is also used in non-Node.js environments
   ],
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const isOnRegister = nextUrl.pathname.startsWith('/register');
-      const isOnLogin = nextUrl.pathname.startsWith('/login');
-
-      // Redirect authenticated users away from auth pages
-      if (isLoggedIn && (isOnLogin || isOnRegister)) {
-        return Response.redirect(new URL('/', nextUrl as unknown as URL));
-      }
-
-      // Allow access to everything
-      return true;
-    },
+  authorized({ auth, request: { nextUrl } }) {
+    const isLoggedIn = !!auth?.user;
+    const isOnRegister = nextUrl.pathname.startsWith('/register');
+    const isOnLogin = nextUrl.pathname.startsWith('/login');
+    const isOnAuthPage = isOnLogin || isOnRegister;
+    
+    // 添加调试信息
+    console.log('Auth callback - isLoggedIn:', isLoggedIn);
+    
+    // 登录后跳转到首页
+    if (isLoggedIn && isOnAuthPage) {
+      return Response.redirect(new URL('/', nextUrl));
+    }
+    
+    // 未登录跳转到登录页
+    if (!isLoggedIn && !isOnAuthPage) {
+      return Response.redirect(new URL('/login', nextUrl));
+    }
+    
+    return true;
   },
+}
 } satisfies NextAuthConfig;

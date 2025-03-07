@@ -70,7 +70,7 @@ export const customModel = (apiIdentifier: string, forReasoning: boolean = false
   console.log("Using model:", modelId);
 
   return wrapLanguageModel({
-    model,
+    model: model as any,
     middleware: customMiddleware,
   });
 };
